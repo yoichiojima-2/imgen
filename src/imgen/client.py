@@ -42,10 +42,36 @@ def _extract_images(resp: dict) -> list[bytes]:
     return images
 
 
-def _request(parts: list[dict], model: str, n: int, api_key: str) -> list[bytes]:
+def _build_generation_config(
+    aspect_ratio: str | None,
+    image_size: str | None,
+    thinking: str | None,
+) -> dict:
+    config: dict = {"responseModalities": ["Image"]}
+    image_config: dict = {}
+    if aspect_ratio:
+        image_config["aspectRatio"] = aspect_ratio
+    if image_size:
+        image_config["imageSize"] = image_size
+    if image_config:
+        config["imageConfig"] = image_config
+    if thinking:
+        config["thinkingConfig"] = {"thinkingLevel": thinking}
+    return config
+
+
+def _request(
+    parts: list[dict],
+    model: str,
+    n: int,
+    api_key: str,
+    aspect_ratio: str | None = None,
+    image_size: str | None = None,
+    thinking: str | None = None,
+) -> list[bytes]:
     payload = {
         "contents": [{"parts": parts}],
-        "generationConfig": {"responseModalities": ["Image"]},
+        "generationConfig": _build_generation_config(aspect_ratio, image_size, thinking),
     }
     results: list[bytes] = []
     for _ in range(n):
@@ -54,8 +80,25 @@ def _request(parts: list[dict], model: str, n: int, api_key: str) -> list[bytes]
     return results
 
 
-def generate(prompt: str, *, model: str, n: int, api_key: str) -> list[bytes]:
-    return _request([{"text": prompt}], model, n, api_key)
+def generate(
+    prompt: str,
+    *,
+    model: str,
+    n: int,
+    api_key: str,
+    aspect_ratio: str | None = None,
+    image_size: str | None = None,
+    thinking: str | None = None,
+) -> list[bytes]:
+    return _request(
+        [{"text": prompt}],
+        model,
+        n,
+        api_key,
+        aspect_ratio=aspect_ratio,
+        image_size=image_size,
+        thinking=thinking,
+    )
 
 
 def edit(
@@ -65,6 +108,9 @@ def edit(
     model: str,
     n: int,
     api_key: str,
+    aspect_ratio: str | None = None,
+    image_size: str | None = None,
+    thinking: str | None = None,
 ) -> list[bytes]:
     mime = mimetypes.guess_type(str(image_path))[0] or "image/png"
     data = base64.b64encode(Path(image_path).read_bytes()).decode("ascii")
@@ -72,4 +118,12 @@ def edit(
         {"inlineData": {"mimeType": mime, "data": data}},
         {"text": prompt},
     ]
-    return _request(parts, model, n, api_key)
+    return _request(
+        parts,
+        model,
+        n,
+        api_key,
+        aspect_ratio=aspect_ratio,
+        image_size=image_size,
+        thinking=thinking,
+    )
