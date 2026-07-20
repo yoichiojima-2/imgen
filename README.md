@@ -16,6 +16,8 @@ uv build && pipx install dist/*.whl
 export GEMINI_API_KEY=...
 ```
 
+(Or pass `--api-key` per invocation.)
+
 ## Usage
 
 ```sh
